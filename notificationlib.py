@@ -2,6 +2,7 @@
 
 from peewee import BooleanField, CharField, ForeignKeyField
 
+from emaillib import Mailer
 from mdb import Customer
 
 
@@ -11,7 +12,7 @@ __all__ = ['get_orm_model', 'EMailFacility']
 def get_orm_model(base_model):
     """Returns a ORM model for notification emails."""
 
-    class NotificationEmail(base_model):
+    class NotificationEmail(base_model):    # pylint: disable=R0903
         """Stores emails for notifications about new messages."""
 
         class Meta:     # pylint: disable=C0111,R0903
@@ -45,11 +46,11 @@ class EMailFacility():
         """Returns the respective mailer."""
         return Mailer.from_config(self.email_config)
 
-    def email(obj):
+    def email(self, obj):
         """Sends notifications emails."""
         emails = self.email_generator(obj)
 
         if emails:  # pylint: disable=W0125
-            return MAILER.send(emails)
+            return self.mailer.send(emails)
 
         return None
