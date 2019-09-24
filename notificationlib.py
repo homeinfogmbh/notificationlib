@@ -11,7 +11,7 @@ __all__ = ['get_email_func', 'get_orm_model']
 
 
 CONFIG = loadcfg('notificationlib.conf')
-MAILER = Mailer.from_config(CONFIG['automailer'])
+MAILER = Mailer.from_config(CONFIG['mailer'])
 
 
 def get_email_func(get_emails_func):
