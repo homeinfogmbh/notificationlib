@@ -1,17 +1,21 @@
 """Common notification library."""
 
+from flask import request
 from peewee import BooleanField, CharField, ForeignKeyField
 
 from configlib import loadcfg
 from emaillib import Mailer
+from his import CUSTOMER, admin, authenticated, authorized
 from mdb import Customer
+from wsgilib import JSON, JSONMessage
 
 
-__all__ = ['get_email_func', 'get_orm_model']
+__all__ = ['get_email_func', 'get_orm_model', 'get_wsgi_funcs']
 
 
 CONFIG = loadcfg('notificationlib.conf')
 MAILER = Mailer.from_config(CONFIG['mailer'])
+EMAILS_UPDATED = JSONMessage('The emails list has benn updated.', status=200)
 
 
 def get_email_func(get_emails_func):
@@ -51,3 +55,37 @@ def get_orm_model(base_model):
             return record
 
     return NotificationEmail
+
+
+def get_wsgi_funcs(service_name, orm_model):
+    """Returns WSGI functions to list and set the respective emails."""
+
+    @authenticated
+    @authorized(service_name)
+    def get_emails():
+        """Deletes the respective message."""
+
+        return JSON([email.to_json() for email in orm_model.select().where(
+            orm_model.customer == CUSTOMER.id)])
+
+
+    @authenticated
+    @authorized(service_name)
+    @admin
+    def set_emails():
+        """Replaces all email address of the respective customer."""
+
+        ids = []
+
+        for email in orm_model.select().where(
+                orm_model.customer == CUSTOMER.id):
+            email.delete_instance()
+
+        for email in request.json:
+            email = orm_model.from_json(email, CUSTOMER.id)
+            email.save()
+            ids.append(email.id)
+
+        return EMAILS_UPDATED.update(ids=ids)
+
+    return (get_emails, set_emails)
