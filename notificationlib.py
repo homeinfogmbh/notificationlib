@@ -2,11 +2,31 @@
 
 from peewee import BooleanField, CharField, ForeignKeyField
 
+from configlib import loadcfg
 from emaillib import Mailer
 from mdb import Customer
 
 
-__all__ = ['get_orm_model', 'EMailFacility']
+__all__ = ['get_email_func', 'get_orm_model']
+
+
+CONFIG = loadcfg('notificationlib.conf')
+MAILER = Mailer.from_config(CONFIG['automailer'])
+
+
+def get_email_func(get_emails_func):
+    """Returns an emailing function."""
+
+    def email(obj):
+        """Emails information about the given object."""
+        emails = get_emails_func(obj)
+
+        if emails:
+            return MAILER.send(emails)
+
+        return None
+
+    return email
 
 
 def get_orm_model(base_model):
@@ -31,26 +51,3 @@ def get_orm_model(base_model):
             return record
 
     return NotificationEmail
-
-
-class EMailFacility():
-    """Emailing facility."""
-
-    def __init__(self, email_config, email_generator):
-        """Sets the email configuration."""
-        self.email_config = email_config
-        self.email_generator = email_generator
-
-    @property
-    def mailer(self):
-        """Returns the respective mailer."""
-        return Mailer.from_config(self.email_config)
-
-    def email(self, obj):
-        """Sends notifications emails."""
-        emails = self.email_generator(obj)
-
-        if emails:  # pylint: disable=W0125
-            return self.mailer.send(emails)
-
-        return None
