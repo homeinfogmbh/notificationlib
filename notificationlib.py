@@ -21,9 +21,9 @@ EMAILS_UPDATED = JSONMessage('The emails list has benn updated.', status=200)
 def get_email_func(get_emails_func):
     """Returns an emailing function."""
 
-    def email(obj):
+    def email(*args, **kwargs):
         """Emails information about the given object."""
-        emails = get_emails_func(obj)
+        emails = get_emails_func(*args, **kwargs)
 
         if emails:
             return MAILER.send(emails)
