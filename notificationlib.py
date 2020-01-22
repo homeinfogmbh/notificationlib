@@ -10,7 +10,7 @@ from mdb import Customer
 from wsgilib import JSON, JSONMessage
 
 
-__all__ = ['get_email_func', 'get_orm_model', 'get_wsgi_funcs']
+__all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
 
 
 CONFIG = loadcfg('notificationlib.conf')
@@ -33,7 +33,7 @@ def get_email_func(get_emails_func):
     return email
 
 
-def get_orm_model(base_model, table_name='notification_emails'):
+def get_email_orm_model(base_model, table_name='notification_emails'):
     """Returns a ORM model for notification emails."""
 
     class NotificationEmail(base_model):    # pylint: disable=R0903
@@ -57,7 +57,7 @@ def get_orm_model(base_model, table_name='notification_emails'):
     return NotificationEmail
 
 
-def get_wsgi_funcs(service_name, orm_model):
+def get_wsgi_funcs(service_name, email_orm_model):
     """Returns WSGI functions to list and set the respective emails."""
 
     @authenticated
@@ -65,8 +65,9 @@ def get_wsgi_funcs(service_name, orm_model):
     def get_emails():
         """Deletes the respective message."""
 
-        return JSON([email.to_json() for email in orm_model.select().where(
-            orm_model.customer == CUSTOMER.id)])
+        condition = email_orm_model.customer == CUSTOMER.id
+        emails = email_orm_model.select().where(condition)
+        return JSON([email.to_json() for email in emails])
 
 
     @authenticated
@@ -76,13 +77,13 @@ def get_wsgi_funcs(service_name, orm_model):
         """Replaces all email address of the respective customer."""
 
         ids = []
+        condition = email_orm_model.customer == CUSTOMER.id
 
-        for email in orm_model.select().where(
-                orm_model.customer == CUSTOMER.id):
+        for email in email_orm_model.select().where(condition):
             email.delete_instance()
 
         for email in request.json:
-            email = orm_model.from_json(email, CUSTOMER.id)
+            email = email_orm_model.from_json(email, CUSTOMER.id)
             email.save()
             ids.append(email.id)
 
