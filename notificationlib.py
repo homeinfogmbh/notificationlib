@@ -33,15 +33,16 @@ def get_email_func(get_emails_func):
     return email
 
 
-def get_email_orm_model(base_model, tablename='notification_emails'):
+def get_email_orm_model(base_model, table_name='notification_emails'):
     """Returns a ORM model for notification emails."""
 
     class NotificationEmail(base_model):    # pylint: disable=R0903
         """Stores emails for notifications about new messages."""
 
         class Meta:     # pylint: disable=C0111,R0903
-            table_name = tablename
+            pass
 
+        Meta.table_name = table_name    # Avoid scope confusion.
         customer = ForeignKeyField(Customer, column_name='customer')
         email = CharField(255)
         subject = CharField(255, null=True)
