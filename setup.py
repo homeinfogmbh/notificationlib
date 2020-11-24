@@ -11,4 +11,5 @@ setup(
     maintainer_email='<r dot neumann at homeinfo priod de>',
     py_modules=['notificationlib'],
     license='GPLv3',
-    description='An email notification library.')
+    description='An email notification library.'
+)

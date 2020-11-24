@@ -1,7 +1,10 @@
 """Common notification library."""
 
+from __future__ import annotations
+from typing import Callable, Tuple
+
 from flask import request
-from peewee import BooleanField, CharField, ForeignKeyField
+from peewee import BooleanField, CharField, ForeignKeyField, Model, ModelBase
 
 from configlib import loadcfg
 from emaillib import Mailer
@@ -14,11 +17,12 @@ __all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
 
 
 CONFIG = loadcfg('notificationlib.conf')
-MAILER = Mailer.from_config(CONFIG['mailer'])
+MAILER = Mailer.from_section(CONFIG['mailer'])
 EMAILS_UPDATED = JSONMessage('The emails list has benn updated.', status=200)
+WSGIFuncs = Tuple[Callable, Callable]
 
 
-def get_email_func(get_emails_func):
+def get_email_func(get_emails_func: Callable) -> Callable:
     """Returns an emailing function."""
 
     def email(*args, **kwargs):
@@ -33,7 +37,8 @@ def get_email_func(get_emails_func):
     return email
 
 
-def get_email_orm_model(base_model, table_name='notification_emails'):
+def get_email_orm_model(base_model: ModelBase,
+                        table_name: str = 'notification_emails') -> ModelBase:
     """Returns a ORM model for notification emails."""
 
     class NotificationEmail(base_model):    # pylint: disable=R0903
@@ -49,7 +54,7 @@ def get_email_orm_model(base_model, table_name='notification_emails'):
         html = BooleanField(default=False)
 
         @classmethod
-        def from_json(cls, json, customer, **kwargs):
+        def from_json(cls, json: dict, customer: Customer, **kwargs) -> Model:
             """Creates a notification email for the respective customer."""
             record = super().from_json(json, **kwargs)
             record.customer = customer
@@ -58,12 +63,12 @@ def get_email_orm_model(base_model, table_name='notification_emails'):
     return NotificationEmail
 
 
-def get_wsgi_funcs(service_name, email_orm_model):
+def get_wsgi_funcs(service_name: str, email_orm_model: ModelBase) -> WSGIFuncs:
     """Returns WSGI functions to list and set the respective emails."""
 
     @authenticated
     @authorized(service_name)
-    def get_emails():
+    def get_emails() -> JSON:
         """Deletes the respective message."""
 
         condition = email_orm_model.customer == CUSTOMER.id
@@ -74,7 +79,7 @@ def get_wsgi_funcs(service_name, email_orm_model):
     @authenticated
     @authorized(service_name)
     @admin
-    def set_emails():
+    def set_emails() -> JSONMessage:
         """Replaces all email address of the respective customer."""
 
         ids = []
