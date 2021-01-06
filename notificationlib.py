@@ -18,7 +18,7 @@ __all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
 
 CONFIG = loadcfg('notificationlib.conf')
 MAILER = Mailer.from_section(CONFIG['mailer'])
-EMAILS_UPDATED = JSONMessage('The emails list has benn updated.', status=200)
+EMAILS_UPDATED = JSONMessage('The emails list has been updated.', status=200)
 WSGIFuncs = Tuple[Callable, Callable]
 
 
