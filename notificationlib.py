@@ -1,12 +1,13 @@
 """Common notification library."""
 
 from __future__ import annotations
+from functools import partial
 from typing import Any, Callable, Iterator, Tuple
 
 from flask import request
 from peewee import BooleanField, CharField, ForeignKeyField, Model, ModelBase
 
-from configlib import loadcfg
+from configlib import load_config
 from emaillib import EMail, Mailer
 from his import CUSTOMER, admin, authenticated, authorized
 from mdb import Customer
@@ -16,11 +17,18 @@ from wsgilib import JSON, JSONMessage
 __all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
 
 
-CONFIG = loadcfg('notificationlib.conf')
-MAILER = Mailer.from_section(CONFIG['mailer'])
 EMAILS_UPDATED = JSONMessage('The emails list has been updated.', status=200)
 GetEmailsFunc = Callable[..., Iterator[EMail]]
 WSGIFuncs = Tuple[Callable, Callable]
+
+
+get_config = partial(load_config, 'notificationlib.conf')
+
+
+def get_mailer() -> Mailer:
+    """Returns the mailer."""
+
+    return Mailer.from_section(get_config()['mailer'])
 
 
 def get_email_func(get_emails_func: GetEmailsFunc) -> Callable[..., Any]:
@@ -31,7 +39,7 @@ def get_email_func(get_emails_func: GetEmailsFunc) -> Callable[..., Any]:
         emails = list(get_emails_func(*args, **kwargs))
 
         if emails:
-            return MAILER.send(emails)
+            return get_mailer().send(emails)
 
         return None
 
