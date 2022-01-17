@@ -20,8 +20,6 @@ __all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
 EMAILS_UPDATED = JSONMessage('The emails list has been updated.', status=200)
 GetEmailsFunc = Callable[..., Iterator[EMail]]
 WSGIFuncs = Tuple[Callable, Callable]
-
-
 get_config = partial(load_config, 'notificationlib.conf')
 
 
@@ -46,9 +44,10 @@ def get_email_func(get_emails_func: GetEmailsFunc) -> Callable[..., Any]:
     return email
 
 
-def get_email_orm_model(base_model: ModelBase,
-                        table_name: str = 'notification_emails') -> ModelBase:
-    """Returns a ORM model for notification emails."""
+def get_email_orm_model(
+        base_model: ModelBase, table_name: str = 'notification_emails'
+) -> ModelBase:
+    """Returns an ORM model for notification emails."""
 
     class NotificationEmail(base_model):    # pylint: disable=R0903
         """Stores emails for notifications about new messages."""
@@ -84,7 +83,6 @@ def get_wsgi_funcs(service_name: str, email_orm_model: ModelBase) -> WSGIFuncs:
         emails = email_orm_model.select().where(condition)
         return JSON([email.to_json() for email in emails])
 
-
     @authenticated
     @authorized(service_name)
     @admin
@@ -104,4 +102,4 @@ def get_wsgi_funcs(service_name: str, email_orm_model: ModelBase) -> WSGIFuncs:
 
         return EMAILS_UPDATED.update(ids=ids)
 
-    return (get_emails, set_emails)
+    return get_emails, set_emails
