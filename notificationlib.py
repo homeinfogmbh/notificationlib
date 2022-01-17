@@ -34,9 +34,8 @@ def get_email_func(get_emails_func: GetEmailsFunc) -> Callable[..., Any]:
 
     def email(*args, **kwargs):
         """Emails information about the given object."""
-        emails = list(get_emails_func(*args, **kwargs))
 
-        if emails:
+        if emails := list(get_emails_func(*args, **kwargs)):
             return get_mailer().send(emails)
 
         return None
