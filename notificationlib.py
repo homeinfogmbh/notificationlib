@@ -1,11 +1,10 @@
 """Common notification library."""
 
 from __future__ import annotations
-from functools import partial
-from typing import Any, Callable, Iterator, Tuple
+from typing import Any, Callable, Iterable, Type
 
 from flask import request
-from peewee import BooleanField, CharField, ForeignKeyField, Model, ModelBase
+from peewee import BooleanField, CharField, ForeignKeyField, Model
 
 from configlib import load_config
 from emaillib import EMail, Mailer
@@ -17,19 +16,15 @@ from wsgilib import JSON, JSONMessage
 __all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
 
 
-EMAILS_UPDATED = JSONMessage('The emails list has been updated.', status=200)
-GetEmailsFunc = Callable[..., Iterator[EMail]]
-WSGIFuncs = Tuple[Callable, Callable]
-get_config = partial(load_config, 'notificationlib.conf')
-
-
 def get_mailer() -> Mailer:
     """Returns the mailer."""
 
-    return Mailer.from_section(get_config()['mailer'])
+    return Mailer.from_section(load_config('notificationlib.conf')['mailer'])
 
 
-def get_email_func(get_emails_func: GetEmailsFunc) -> Callable[..., Any]:
+def get_email_func(
+        get_emails_func: Callable[..., Iterable[EMail]]
+) -> Callable[..., Any]:
     """Returns an emailing function."""
 
     def email(*args, **kwargs):
@@ -44,14 +39,14 @@ def get_email_func(get_emails_func: GetEmailsFunc) -> Callable[..., Any]:
 
 
 def get_email_orm_model(
-        base_model: ModelBase, table_name: str = 'notification_emails'
-) -> ModelBase:
+        base_model: Type[Model], table_name: str = 'notification_emails'
+) -> Type[Model]:
     """Returns an ORM model for notification emails."""
 
-    class NotificationEmail(base_model):    # pylint: disable=R0903
+    class NotificationEmail(base_model):
         """Stores emails for notifications about new messages."""
 
-        class Meta:     # pylint: disable=C0111,R0903
+        class Meta:
             pass
 
         Meta.table_name = table_name    # Avoid scope confusion.
@@ -70,7 +65,10 @@ def get_email_orm_model(
     return NotificationEmail
 
 
-def get_wsgi_funcs(service_name: str, email_orm_model: ModelBase) -> WSGIFuncs:
+def get_wsgi_funcs(
+        service_name: str,
+        email_orm_model: Type[Model]
+) -> tuple[Callable, Callable]:
     """Returns WSGI functions to list and set the respective emails."""
 
     @authenticated
@@ -99,6 +97,8 @@ def get_wsgi_funcs(service_name: str, email_orm_model: ModelBase) -> WSGIFuncs:
             email.save()
             ids.append(email.id)
 
-        return EMAILS_UPDATED.update(ids=ids)
+        return JSONMessage(
+            'The emails list has been updated.', ids=ids, status=200
+        )
 
     return get_emails, set_emails
