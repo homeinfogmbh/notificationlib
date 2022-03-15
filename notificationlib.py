@@ -4,12 +4,13 @@ from __future__ import annotations
 from typing import Any, Callable, Iterable, Type
 
 from flask import request
-from peewee import BooleanField, CharField, ForeignKeyField, Model
+from peewee import BooleanField, ForeignKeyField, Model
 
 from configlib import load_config
 from emaillib import EMail, Mailer
 from his import CUSTOMER, admin, authenticated, authorized
 from mdb import Customer
+from peeweeplus import EMailField, HTMLCharField
 from wsgilib import JSON, JSONMessage
 
 
@@ -51,8 +52,8 @@ def get_email_orm_model(
 
         Meta.table_name = table_name    # Avoid scope confusion.
         customer = ForeignKeyField(Customer, column_name='customer')
-        email = CharField(255)
-        subject = CharField(255, null=True)
+        email = EMailField(255)
+        subject = HTMLCharField(255, null=True)
         html = BooleanField(default=False)
 
         @classmethod
