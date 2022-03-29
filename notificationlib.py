@@ -40,7 +40,11 @@ def get_email_func(
 
 
 def get_email_orm_model(
-        base_model: Type[Model], table_name: str = 'notification_emails'
+        base_model: Type[Model],
+        table_name: str = 'notification_emails',
+        *,
+        subject_field: bool = True,
+        html_field: bool = True
 ) -> Type[Model]:
     """Returns an ORM model for notification emails."""
 
@@ -53,8 +57,12 @@ def get_email_orm_model(
         Meta.table_name = table_name    # Avoid scope confusion.
         customer = ForeignKeyField(Customer, column_name='customer')
         email = EMailField(255)
-        subject = HTMLCharField(255, null=True)
-        html = BooleanField(default=False)
+
+        if subject_field:
+            subject = HTMLCharField(255, null=True)
+
+        if html_field:
+            html = BooleanField(default=False)
 
         @classmethod
         def from_json(cls, json: dict, customer: Customer, **kwargs) -> Model:
