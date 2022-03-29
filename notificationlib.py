@@ -1,7 +1,7 @@
 """Common notification library."""
 
 from __future__ import annotations
-from typing import Any, Callable, Iterable, Type
+from typing import Callable, Iterable, Optional, Type
 
 from flask import request
 from peewee import BooleanField, ForeignKeyField, Model
@@ -25,10 +25,10 @@ def get_mailer() -> Mailer:
 
 def get_email_func(
         get_emails_func: Callable[..., Iterable[EMail]]
-) -> Callable[..., Any]:
+) -> Callable[..., Optional[bool]]:
     """Returns an emailing function."""
 
-    def email(*args, **kwargs):
+    def email(*args, **kwargs) -> Optional[bool]:
         """Emails information about the given object."""
 
         if emails := list(get_emails_func(*args, **kwargs)):
@@ -85,9 +85,11 @@ def get_wsgi_funcs(
     def get_emails() -> JSON:
         """Deletes the respective message."""
 
-        condition = email_orm_model.customer == CUSTOMER.id
-        emails = email_orm_model.select().where(condition)
-        return JSON([email.to_json() for email in emails])
+        return JSON([
+            email.to_json() for email in email_orm_model.select().where(
+                email_orm_model.customer == CUSTOMER.id
+            )
+        ])
 
     @authenticated
     @authorized(service_name)
@@ -96,9 +98,10 @@ def get_wsgi_funcs(
         """Replaces all email address of the respective customer."""
 
         ids = []
-        condition = email_orm_model.customer == CUSTOMER.id
 
-        for email in email_orm_model.select().where(condition):
+        for email in email_orm_model.select().where(
+                email_orm_model.customer == CUSTOMER.id
+        ):
             email.delete_instance()
 
         for email in request.json:
