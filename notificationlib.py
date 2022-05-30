@@ -97,8 +97,6 @@ def get_wsgi_funcs(
     def set_emails() -> JSONMessage:
         """Replaces all email address of the respective customer."""
 
-        ids = []
-
         for email in email_orm_model.select().where(
                 email_orm_model.customer == CUSTOMER.id
         ):
@@ -107,10 +105,7 @@ def get_wsgi_funcs(
         for email in request.json:
             email = email_orm_model.from_json(email, CUSTOMER.id)
             email.save()
-            ids.append(email.id)
 
-        return JSONMessage(
-            'The emails list has been updated.', ids=ids, status=200
-        )
+        return JSONMessage('The emails list has been updated.', status=200)
 
     return get_emails, set_emails
