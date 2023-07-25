@@ -14,17 +14,17 @@ from peeweeplus import EMailField, HTMLCharField
 from wsgilib import JSON, JSONMessage
 
 
-__all__ = ['get_email_func', 'get_email_orm_model', 'get_wsgi_funcs']
+__all__ = ["get_email_func", "get_email_orm_model", "get_wsgi_funcs"]
 
 
 def get_mailer() -> Mailer:
     """Returns the mailer."""
 
-    return Mailer.from_section(load_config('notificationlib.conf')['mailer'])
+    return Mailer.from_section(load_config("notificationlib.conf")["mailer"])
 
 
 def get_email_func(
-        get_emails_func: Callable[..., Iterable[EMail]]
+    get_emails_func: Callable[..., Iterable[EMail]]
 ) -> Callable[..., Optional[bool]]:
     """Returns an emailing function."""
 
@@ -40,11 +40,11 @@ def get_email_func(
 
 
 def get_email_orm_model(
-        base_model: Type[Model],
-        table_name: str = 'notification_emails',
-        *,
-        subject_field: bool = True,
-        html_field: bool = True
+    base_model: Type[Model],
+    table_name: str = "notification_emails",
+    *,
+    subject_field: bool = True,
+    html_field: bool = True,
 ) -> Type[Model]:
     """Returns an ORM model for notification emails."""
 
@@ -54,8 +54,8 @@ def get_email_orm_model(
         class Meta:
             pass
 
-        Meta.table_name = table_name    # Avoid scope confusion.
-        customer = ForeignKeyField(Customer, column_name='customer')
+        Meta.table_name = table_name  # Avoid scope confusion.
+        customer = ForeignKeyField(Customer, column_name="customer")
         email = EMailField(255)
 
         if subject_field:
@@ -75,8 +75,7 @@ def get_email_orm_model(
 
 
 def get_wsgi_funcs(
-        service_name: str,
-        email_orm_model: Type[Model]
+    service_name: str, email_orm_model: Type[Model]
 ) -> tuple[Callable, Callable]:
     """Returns WSGI functions to list and set the respective emails."""
 
@@ -85,11 +84,14 @@ def get_wsgi_funcs(
     def get_emails() -> JSON:
         """Deletes the respective message."""
 
-        return JSON([
-            email.to_json() for email in email_orm_model.select().where(
-                email_orm_model.customer == CUSTOMER.id
-            )
-        ])
+        return JSON(
+            [
+                email.to_json()
+                for email in email_orm_model.select().where(
+                    email_orm_model.customer == CUSTOMER.id
+                )
+            ]
+        )
 
     @authenticated
     @authorized(service_name)
@@ -98,7 +100,7 @@ def get_wsgi_funcs(
         """Replaces all email address of the respective customer."""
 
         for email in email_orm_model.select().where(
-                email_orm_model.customer == CUSTOMER.id
+            email_orm_model.customer == CUSTOMER.id
         ):
             email.delete_instance()
 
@@ -106,6 +108,6 @@ def get_wsgi_funcs(
             email = email_orm_model.from_json(email, CUSTOMER.id)
             email.save()
 
-        return JSONMessage('The emails list has been updated.', status=200)
+        return JSONMessage("The emails list has been updated.", status=200)
 
     return get_emails, set_emails
